@@ -1,0 +1,12 @@
+[ignore]
+.*/node_modules/
+
+[include]
+
+[libs]
+
+[options]
+all=true
+module.system.node.resolve_dirname=src
+suppress_comment= \\(.\\|\n\\)*\\$FlowFixMe
+esproposal.decorators=ignore

@@ -1,0 +1,38 @@
+{
+  "name": "dfo-pm-changes-notifier",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "start": "babel-node src/index.js",
+    "lint": "eslint .",
+    "lint-fix": "eslint . --fix",
+    "flow": "flow",
+    "preinstall": "npm prune",
+    "postinstall": "flow-typed install"
+  },
+  "dependencies": {
+    "babel-cli": "^6.24.0",
+    "babel-plugin-transform-class-properties": "^6.23.0",
+    "babel-plugin-transform-decorators-legacy": "^1.3.4",
+    "babel-plugin-transform-flow-strip-types": "^6.22.0",
+    "babel-preset-env": "^1.2.0",
+    "babel-preset-stage-3": "^6.3.13",
+    "jwt-decode": "^2.1.0",
+    "pg": "^6.1.4",
+    "ws": "^2.2.1"
+  },
+  "pre-commit": [
+    "lint",
+    "flow"
+  ],
+  "devDependencies": {
+    "babel-eslint": "^7.1.1",
+    "eslint": "^3.14.1",
+    "eslint-config-mystand": "git+https://bitbucket.org/mystand/eslint-config-mystand.git#ce699dd",
+    "eslint-config-mystand-flow": "git+https://bitbucket.org/mystand/eslint-config-mystand-flow.git#aec74db",
+    "flow-bin": "^0.39.0",
+    "flow-typed": "^2.0.0",
+    "pre-commit": "^1.2.2"
+  }
+}

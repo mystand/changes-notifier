@@ -1,0 +1,15 @@
+# config
+/src/config.js
+
+# dependencies
+/node_modules
+/flow-typed
+
+# Editors configs
+/.idea/dbnavigator.xml
+/.idea/workspace.xml
+/.idea/dictionaries
+
+# system and other files
+.DS_Store
+npm-debug.log

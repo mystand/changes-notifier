@@ -1,0 +1,28 @@
+{
+  "extends": [
+    "mystand",
+    "mystand-flow"
+  ],
+  "ecmaFeatures": {
+    "jsx": true,
+    "modules": true
+  },
+  "env": {
+    "es6": true
+  },
+  "globals": {
+    "console": true,
+    "process": true,
+    "require": true,
+    "module": true,
+    "__dirname": true,
+    "Generator": true
+  },
+  "parser": "babel-eslint",
+  "rules": {
+//    "flowtype/space-before-type-colon": [0, "never"], // have a bug
+//    "flowtype/space-after-type-colon": [0, "always"], // have a bug
+
+//    "import/no-unresolved": 0 // use flow for this inspection
+  }
+}
