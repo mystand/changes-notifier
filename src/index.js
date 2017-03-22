@@ -28,11 +28,14 @@ pg.connect(`postgres://${pgConfig.host}/${pgConfig.db}`, (error, client) => {
       const payload = JSON.parse(msg.payload)
       const { model, action, object } = payload
 
+      console.info('NOTIFICATION', model, action, object)
+
       for (const guid in subscriptions) {
         if (subscriptions.hasOwnProperty(guid)) {
           const subscription: SubscriptionType = subscriptions[guid]
           if (subscription.model === model || isObjectComplyParameters(object, subscription.params)) {
-            subscription.send({ action, object })
+            subscription.send({ guid, action, object })
+            console.info('SEND', guid, action, object)
           }
         }
       }
@@ -55,6 +58,8 @@ server.on('connection', function connection(ws) {
   const userId = String(user.id)
 
   ws.on('message', (message: string) => {
+    console.info('MESSAGE', message)
+
     let jsonMessage
     try {
       jsonMessage = JSON.parse(message)
@@ -69,6 +74,7 @@ server.on('connection', function connection(ws) {
       const { model, params, guid } = args
       const send = (data: HashType) => ws.send(JSON.stringify(data))
       subscriptions[guid] = { userId, model, params, send }
+      console.info('SUBSCRIBE', guid, model, params)
     }
 
     if (command === 'unsubscribe') {
