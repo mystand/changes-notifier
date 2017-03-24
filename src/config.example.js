@@ -4,5 +4,6 @@ export default {
     host: 'localhost',
     port: 5432,
     db: 'dfo_pm_development'
-  }
+  },
+  backend: 'http://localhost:3000'
 }

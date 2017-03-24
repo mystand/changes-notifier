@@ -1,4 +1,5 @@
 // @flow
+import url from 'url'
 import WebSocket from 'ws'
 import jwtDecode from 'jwt-decode'
 import pg from 'pg'
@@ -30,7 +31,7 @@ pg.connect(`postgres://${pgConfig.host}/${pgConfig.db}`, (error, client) => {
       const payload = JSON.parse(msg.payload)
       const { model, action, object, getUrl } = payload
 
-      console.info('NOTIFICATION', model, action, object)
+      console.info('NOTIFICATION', model, action, object, getUrl)
 
       for (const guid in subscriptions) {
         if (subscriptions.hasOwnProperty(guid)) {
@@ -43,7 +44,10 @@ pg.connect(`postgres://${pgConfig.host}/${pgConfig.db}`, (error, client) => {
               const headers = subscription.authToken ? {
                 authorization: `Bearer ${subscription.authToken}`
               } : {}
-              fetch(getUrl, { headers }).then(res => res.json()).then((gotObject) => {
+
+              const fullGetUrl = url.resolve(config.backend, getUrl)
+
+              fetch(fullGetUrl, { headers }).then(res => res.json()).then((gotObject) => {
                 subscription.send({ guid, action, gotObject })
                 console.info('SEND', guid, action, gotObject)
               })
