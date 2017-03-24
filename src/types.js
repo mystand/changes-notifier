@@ -12,5 +12,6 @@ export type SubscriptionType = {
   userId: string,
   model: string,
   params: HashType,
+  authToken?: string,
   send: (HashType) => void
 }

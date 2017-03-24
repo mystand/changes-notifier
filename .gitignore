@@ -6,9 +6,7 @@
 /flow-typed
 
 # Editors configs
-/.idea/dbnavigator.xml
-/.idea/workspace.xml
-/.idea/dictionaries
+/.idea
 
 # system and other files
 .DS_Store

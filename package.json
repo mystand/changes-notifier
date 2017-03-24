@@ -18,7 +18,9 @@
     "babel-plugin-transform-flow-strip-types": "^6.22.0",
     "babel-preset-env": "^1.2.0",
     "babel-preset-stage-3": "^6.3.13",
+    "humps": "^2.0.0",
     "jwt-decode": "^2.1.0",
+    "node-fetch": "^1.6.3",
     "pg": "^6.1.4",
     "ws": "^2.2.1"
   },

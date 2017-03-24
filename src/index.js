@@ -2,6 +2,8 @@
 import WebSocket from 'ws'
 import jwtDecode from 'jwt-decode'
 import pg from 'pg'
+import fetch from 'node-fetch'
+import { decamelize } from 'humps'
 
 import type { MessageType, SubscriptionType, HashType } from './types'
 import config from './config'
@@ -26,7 +28,7 @@ pg.connect(`postgres://${pgConfig.host}/${pgConfig.db}`, (error, client) => {
   client.on('notification', (msg: MessageType) => {
     if (msg.name === 'notification') {
       const payload = JSON.parse(msg.payload)
-      const { model, action, object } = payload
+      const { model, action, object, getUrl } = payload
 
       console.info('NOTIFICATION', model, action, object)
 
@@ -34,8 +36,18 @@ pg.connect(`postgres://${pgConfig.host}/${pgConfig.db}`, (error, client) => {
         if (subscriptions.hasOwnProperty(guid)) {
           const subscription: SubscriptionType = subscriptions[guid]
           if (subscription.model === model || isObjectComplyParameters(object, subscription.params)) {
-            subscription.send({ guid, action, object })
-            console.info('SEND', guid, action, object)
+            if (!getUrl) {
+              subscription.send({ guid, action, object })
+              console.info('SEND', guid, action, object)
+            } else {
+              const headers = subscription.authToken ? {
+                authorization: `Bearer ${subscription.authToken}`
+              } : {}
+              fetch(getUrl, { headers }).then(res => res.json()).then((gotObject) => {
+                subscription.send({ guid, action, gotObject })
+                console.info('SEND', guid, action, gotObject)
+              })
+            }
           }
         }
       }
@@ -51,6 +63,14 @@ const server = new WebSocket.Server({
   port
 })
 console.info(`Listening at ws://0.0.0.0:${port}/`)
+
+function decamelizeObject(object) {
+  const result = {}
+  Object.keys(object).forEach((key) => {
+    result[decamelize(key)] = object[key]
+  })
+  return result
+}
 
 server.on('connection', function connection(ws) {
   const authToken = ws.upgradeReq.headers['sec-websocket-protocol']
@@ -73,8 +93,9 @@ server.on('connection', function connection(ws) {
     if (command === 'subscribe') {
       const { model, params, guid } = args
       const send = (data: HashType) => ws.send(JSON.stringify(data))
-      subscriptions[guid] = { userId, model, params, send }
-      console.info('SUBSCRIBE', guid, model, params)
+      const decamelizedParams = decamelizeObject(params)
+      subscriptions[guid] = { userId, model, params: decamelizedParams, authToken, send }
+      console.info('SUBSCRIBE', guid, model, decamelizedParams )
     }
 
     if (command === 'unsubscribe') {
