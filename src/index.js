@@ -21,6 +21,49 @@ function isObjectComplyParameters(object: HashType, params: HashType): boolean {
   return true
 }
 
+function fetchObject(authToken?: string, getUrl: string): Promise<HashType> {
+  const headers: HashType = authToken ? {
+    authorization: `Bearer ${authToken}`
+  } : {}
+
+  const fullGetUrl: string = url.resolve(config.backend, getUrl)
+
+  return fetch(fullGetUrl, { headers }).then((res) => {
+    return res.status === 200 ? res.json() : Promise.reject(res.status)
+  })
+}
+
+function notifyCreate(guid: string, model: string, object: HashType,
+                      getUrl?: string, subscription: SubscriptionType): void {
+  if (!getUrl) {
+    subscription.send({ guid, action: 'create', object })
+  } else {
+    fetchObject(subscription.authToken, getUrl).then((gotObject) => {
+      subscription.send({ guid, action: 'create', object: gotObject })
+    })
+  }
+}
+
+function notifyUpdate(guid: string, model: string, object: HashType,
+                      getUrl?: string, subscription: SubscriptionType): void {
+  if (!getUrl) {
+    subscription.send({ guid, action: 'update', object })
+  } else {
+    fetchObject(subscription.authToken, getUrl).then((gotObject) => {
+      subscription.send({ guid, action: 'update', object: gotObject })
+    }).catch((status) => {
+      if ([400, 403].includes(status)) {
+        subscription.send({ guid, action: 'destroy', object: { id: object.id } })
+      }
+    })
+  }
+}
+
+function notifyDestroy(guid: string, model: string, object: HashType,
+                      getUrl?: string, subscription: SubscriptionType): void {
+  subscription.send({ guid, action: 'destroy', object })
+}
+
 const { pg: pgConfig } = config
 // $FlowFixMe
 pg.connect(`postgres://${pgConfig.host}/${pgConfig.db}`, (error, client) => {
@@ -37,20 +80,10 @@ pg.connect(`postgres://${pgConfig.host}/${pgConfig.db}`, (error, client) => {
         if (subscriptions.hasOwnProperty(guid)) {
           const subscription: SubscriptionType = subscriptions[guid]
           if (subscription.model === model || isObjectComplyParameters(object, subscription.params)) {
-            if (!getUrl) {
-              subscription.send({ guid, action, object })
-              console.info('SEND', guid, action, object)
-            } else {
-              const headers = subscription.authToken ? {
-                authorization: `Bearer ${subscription.authToken}`
-              } : {}
-
-              const fullGetUrl = url.resolve(config.backend, getUrl)
-
-              fetch(fullGetUrl, { headers }).then(res => res.json()).then((gotObject) => {
-                subscription.send({ guid, action, gotObject })
-                console.info('SEND', guid, action, gotObject)
-              })
+            switch (action) {
+              case 'create': notifyCreate(guid, model, object, getUrl, subscription); break
+              case 'update': notifyUpdate(guid, model, object, getUrl, subscription); break
+              case 'destroy': notifyDestroy(guid, model, object, getUrl, subscription)
             }
           }
         }
