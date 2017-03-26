@@ -95,7 +95,7 @@ server.on('connection', function connection(ws) {
     const { command, args } = jsonMessage
 
     if (command === 'subscribe') {
-      const { model, params, guid } = args
+      const { model, params = {}, guid } = args
       const send = (data: HashType) => ws.send(JSON.stringify(data))
       const decamelizedParams = decamelizeObject(params)
       subscriptions[guid] = { userId, model, params: decamelizedParams, authToken, send }
