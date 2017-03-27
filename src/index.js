@@ -1,24 +1,26 @@
 // @flow
 import url from 'url'
 import WebSocket from 'ws'
-import jwtDecode from 'jwt-decode'
+// import jwtDecode from 'jwt-decode'
 import pg from 'pg'
 import fetch from 'node-fetch'
-import { decamelize } from 'humps'
+import jexl from 'jexl'
 
-import type { MessageType, SubscriptionType, HashType } from './types'
+import type { PsqlMessageType, SubscriptionType, HashType, SubscribeArgsType } from './types'
 import config from './config'
 
 const NOTIFY_EVENT = 'table_change'
-const subscriptions = {}
+const subscriptions: { [key: string]: SubscriptionType } = {}
 
-function isObjectComplyParameters(object: HashType, params: HashType): boolean {
-  const keys = Object.keys(params)
-  for (let i = 0; i < keys.length; ++i) {
-    const key = keys[i]
-    if (object[key] !== params[key]) return false
+async function isObjectComplyCondition(object: HashType, condition: ?string): Promise<boolean> {
+  if (condition == null) return true
+  try {
+    const result = await jexl.eval(condition, { o: object })
+    return !!result
+  } catch (e) {
+    console.error(e)
+    return false
   }
-  return true
 }
 
 function fetchObject(authToken?: string, getUrl: string): Promise<HashType> {
@@ -33,43 +35,40 @@ function fetchObject(authToken?: string, getUrl: string): Promise<HashType> {
   })
 }
 
-function notifyCreate(guid: string, model: string, object: HashType,
-                      getUrl?: string, subscription: SubscriptionType): void {
+function notifyCreate(subscription: SubscriptionType, object: HashType, getUrl?: string): void {
   if (!getUrl) {
-    subscription.send({ guid, action: 'create', object })
+    subscription.send({ action: 'create', object })
   } else {
     fetchObject(subscription.authToken, getUrl).then((gotObject) => {
-      subscription.send({ guid, action: 'create', object: gotObject })
+      subscription.send({ action: 'create', object: gotObject })
     })
   }
 }
 
-function notifyUpdate(guid: string, model: string, object: HashType,
-                      getUrl?: string, subscription: SubscriptionType): void {
+function notifyUpdate(subscription: SubscriptionType, object: HashType, getUrl?: string): void {
   if (!getUrl) {
-    subscription.send({ guid, action: 'update', object })
+    subscription.send({ action: 'update', object })
   } else {
     fetchObject(subscription.authToken, getUrl).then((gotObject) => {
-      subscription.send({ guid, action: 'update', object: gotObject })
+      subscription.send({ action: 'update', object: gotObject })
     }).catch((status) => {
       if ([400, 403].includes(status)) {
-        subscription.send({ guid, action: 'destroy', object: { id: object.id } })
+        subscription.send({ action: 'destroy', object: { id: object.id } })
       }
     })
   }
 }
 
-function notifyDestroy(guid: string, model: string, object: HashType,
-                      getUrl?: string, subscription: SubscriptionType): void {
-  subscription.send({ guid, action: 'destroy', object })
+function notifyDestroy(subscription: SubscriptionType, object: HashType): void {
+  subscription.send({ action: 'destroy', object })
 }
 
 const { pg: pgConfig } = config
-// $FlowFixMe
+// $FlowIgnore
 pg.connect(`postgres://${pgConfig.host}/${pgConfig.db}`, (error, client) => {
-  if (error)throw error
+  if (error) throw error
 
-  client.on('notification', (msg: MessageType) => {
+  client.on('notification', (msg: PsqlMessageType) => {
     if (msg.name === 'notification') {
       const payload = JSON.parse(msg.payload)
       const { model, action, object, getUrl } = payload
@@ -79,12 +78,17 @@ pg.connect(`postgres://${pgConfig.host}/${pgConfig.db}`, (error, client) => {
       for (const guid in subscriptions) {
         if (subscriptions.hasOwnProperty(guid)) {
           const subscription: SubscriptionType = subscriptions[guid]
-          if (subscription.model === model || isObjectComplyParameters(object, subscription.params)) {
-            switch (action) {
-              case 'create': notifyCreate(guid, model, object, getUrl, subscription); break
-              case 'update': notifyUpdate(guid, model, object, getUrl, subscription); break
-              case 'destroy': notifyDestroy(guid, model, object, getUrl, subscription)
-            }
+
+          if (subscription.model === model) {
+            isObjectComplyCondition(object, subscription.condition)
+              .then((isComply: boolean) => {
+                if (isComply) {
+                  if (action === 'create') notifyCreate(subscription, object, getUrl)
+                  else if (action === 'update') notifyUpdate(subscription, object, getUrl)
+                  else if (action === 'destroy') notifyDestroy(subscription, object)
+                }
+              })
+              .catch(console.error)
           }
         }
       }
@@ -101,18 +105,14 @@ const server = new WebSocket.Server({
 })
 console.info(`Listening at ws://0.0.0.0:${port}/`)
 
-function decamelizeObject(object) {
-  const result = {}
-  Object.keys(object).forEach((key) => {
-    result[decamelize(key)] = object[key]
-  })
-  return result
-}
-
-server.on('connection', function connection(ws) {
+server.on('connection', (ws) => {
   const authToken = ws.upgradeReq.headers['sec-websocket-protocol']
-  const user = jwtDecode(authToken) // todo catch error
-  const userId = String(user.id)
+  // const user = jwtDecode(authToken) // todo catch error
+
+  function unSubscribe(guid: string) {
+    delete subscriptions[guid]
+    console.info('UNSUBSCRIBE', guid)
+  }
 
   ws.on('message', (message: string) => {
     console.info('MESSAGE', message)
@@ -128,24 +128,20 @@ server.on('connection', function connection(ws) {
     const { command, args } = jsonMessage
 
     if (command === 'subscribe') {
-      const { model, params = {}, guid } = args
-      const send = (data: HashType) => ws.send(JSON.stringify(data))
-      const decamelizedParams = decamelizeObject(params)
-      subscriptions[guid] = { userId, model, params: decamelizedParams, authToken, send }
-      console.info('SUBSCRIBE', guid, model, decamelizedParams )
+      const { model, condition, guid } = (args: SubscribeArgsType)
+      const send = (data: HashType) => ws.send(JSON.stringify({ guid, ...data }))
+      subscriptions[guid] = { model, condition, authToken, send }
+      console.info('SUBSCRIBE', guid, model, condition)
     }
 
-    if (command === 'unsubscribe') {
-      const { guid } = args
-      delete subscriptions[guid]
-    }
+    if (command === 'unSubscribe') unSubscribe(args.guid)
   })
 
   ws.on('close', () => {
     const guids = Object.keys(subscriptions)
     for (let i = 0; i < guids.length; ++i) {
       const guid = guids[i]
-      if (subscriptions[guid].userId === userId) delete subscriptions[guid]
+      if (subscriptions[guid].authToken === authToken) unSubscribe(guid)
     }
   })
 })

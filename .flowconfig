@@ -8,5 +8,5 @@
 [options]
 all=true
 module.system.node.resolve_dirname=src
-suppress_comment= \\(.\\|\n\\)*\\$FlowFixMe
+suppress_comment= \\(.\\|\n\\)*\\$FlowIgnore
 esproposal.decorators=ignore

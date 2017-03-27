@@ -1,6 +1,6 @@
 export type HashType = { [key: string]: any }
 
-export type MessageType = {
+export type PsqlMessageType = {
   name: 'notification',
   length: number,
   processId: number,
@@ -9,9 +9,14 @@ export type MessageType = {
 }
 
 export type SubscriptionType = {
-  userId: string,
   model: string,
-  params: HashType,
+  condition: ?string,
   authToken?: string,
   send: (HashType) => void
+}
+
+export type SubscribeArgsType = {
+  guid: string,
+  model: string,
+  condition: ?string
 }

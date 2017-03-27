@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/repository.iml" filepath="$PROJECT_DIR$/.idea/repository.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/repository-changes-notifier.iml" filepath="$PROJECT_DIR$/.idea/repository-changes-notifier.iml" />
     </modules>
   </component>
 </project>
