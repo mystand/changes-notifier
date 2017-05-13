@@ -5,7 +5,8 @@ import WebSocket from 'ws'
 import pg from 'pg'
 import fetch from 'node-fetch'
 import jexl from 'jexl'
-
+import qs from 'qs'
+import URI from 'urijs'
 import type { PsqlMessageType, SubscriptionType, HashType, SubscribeArgsType } from './types'
 import config from './config'
 
@@ -74,17 +75,22 @@ pg.connect(`postgres://${pgConfig.host}/${pgConfig.db}`, (error, client) => {
       const { model, action, object, getUrl } = payload
 
       console.info('NOTIFICATION', model, action, object, getUrl)
-
       for (const guid in subscriptions) {
         if (subscriptions.hasOwnProperty(guid)) {
           const subscription: SubscriptionType = subscriptions[guid]
-
+          let getUrlWithQuery
+          if (subscription.getUrlOptions) {
+            // query of urijs can't parse nested query parameters
+            const query = qs.stringify(subscription.getUrlOptions)
+            // eslint-disable-next-line babel/new-cap
+            getUrlWithQuery = URI(getUrl).query(query).toString()
+          } else { getUrlWithQuery = getUrl }
           if (subscription.model === model) {
             isObjectComplyCondition(object, subscription.condition)
               .then((isComply: boolean) => {
                 if (isComply) {
-                  if (action === 'create') notifyCreate(subscription, object, getUrl)
-                  else if (action === 'update') notifyUpdate(subscription, object, getUrl)
+                  if (action === 'create') notifyCreate(subscription, object, getUrlWithQuery)
+                  else if (action === 'update') notifyUpdate(subscription, object, getUrlWithQuery)
                   else if (action === 'destroy') notifyDestroy(subscription, object)
                 }
               })
@@ -128,10 +134,10 @@ server.on('connection', (ws) => {
     const { command, args } = jsonMessage
 
     if (command === 'subscribe') {
-      const { model, condition, guid } = (args: SubscribeArgsType)
+      const { model, condition, getUrlOptions, guid } = (args: SubscribeArgsType)
       const send = (data: HashType) => ws.send(JSON.stringify({ guid, ...data }))
-      subscriptions[guid] = { model, condition, authToken, send }
-      console.info('SUBSCRIBE', guid, model, condition)
+      subscriptions[guid] = { model, condition, getUrlOptions, authToken, send }
+      console.info('SUBSCRIBE', guid, model, condition, getUrlOptions)
     }
 
     if (command === 'unSubscribe') unSubscribe(args.guid)

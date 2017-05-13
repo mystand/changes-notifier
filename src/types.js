@@ -18,5 +18,6 @@ export type SubscriptionType = {
 export type SubscribeArgsType = {
   guid: string,
   model: string,
-  condition: ?string
+  condition: ?string,
+  getUrlOptions: ?Object
 }
