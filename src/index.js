@@ -7,7 +7,9 @@ import fetch from 'node-fetch'
 import jexl from 'jexl'
 import qs from 'qs'
 import URI from 'urijs'
+
 import type { PsqlMessageType, SubscriptionType, HashType, SubscribeArgsType } from './types'
+import * as logger from './logger'
 import config from './config'
 
 const NOTIFY_EVENT = 'table_change'
@@ -19,7 +21,7 @@ async function isObjectComplyCondition(object: HashType, condition: ?string): Pr
     const result = await jexl.eval(condition, { o: object })
     return !!result
   } catch (e) {
-    console.error(e)
+    logger.error(e)
     return false
   }
 }
@@ -74,7 +76,10 @@ pg.connect(`postgres://${pgConfig.host}/${pgConfig.db}`, (error, client) => {
       const payload = JSON.parse(msg.payload)
       const { model, action, object, getUrl } = payload
 
-      console.info('NOTIFICATION', model, action, object, getUrl)
+      logger.info('NOTIFICATION', model, action, object, getUrl)
+
+      logger.time('For guid in subscriptions')
+
       for (const guid in subscriptions) {
         if (subscriptions.hasOwnProperty(guid)) {
           const subscription: SubscriptionType = subscriptions[guid]
@@ -84,7 +89,10 @@ pg.connect(`postgres://${pgConfig.host}/${pgConfig.db}`, (error, client) => {
             const query = qs.stringify(subscription.getUrlOptions)
             // eslint-disable-next-line babel/new-cap
             getUrlWithQuery = URI(getUrl).query(query).toString()
-          } else { getUrlWithQuery = getUrl }
+          } else {
+            getUrlWithQuery = getUrl
+          }
+
           if (subscription.model === model) {
             isObjectComplyCondition(object, subscription.condition)
               .then((isComply: boolean) => {
@@ -94,10 +102,12 @@ pg.connect(`postgres://${pgConfig.host}/${pgConfig.db}`, (error, client) => {
                   else if (action === 'destroy') notifyDestroy(subscription, object)
                 }
               })
-              .catch(console.error)
+              .catch(logger.error)
           }
         }
       }
+
+      logger.timeEnd('For guid in subscriptions')
     }
   })
 
@@ -109,7 +119,7 @@ const server = new WebSocket.Server({
   perMessageDeflate: false,
   port
 })
-console.info(`Listening at ws://0.0.0.0:${port}/`)
+logger.info(`Listening at ws://0.0.0.0:${port}/`)
 
 server.on('connection', (ws) => {
   const authToken = ws.upgradeReq.headers['sec-websocket-protocol']
@@ -117,11 +127,13 @@ server.on('connection', (ws) => {
 
   function unSubscribe(guid: string) {
     delete subscriptions[guid]
-    console.info('UNSUBSCRIBE', guid)
+    logger.info('UNSUBSCRIBE', guid)
+    logger.debug('Subscriptions count:', Object.keys(subscriptions).length)
+    logger.debug('Subscriptions:', subscriptions)
   }
 
   ws.on('message', (message: string) => {
-    console.info('MESSAGE', message)
+    logger.info('MESSAGE', message)
 
     let jsonMessage
     try {
@@ -137,9 +149,11 @@ server.on('connection', (ws) => {
       const { model, condition, getUrlOptions, guid } = (args: SubscribeArgsType)
       const send = (data: HashType) => ws.send(JSON.stringify({ guid, ...data }))
       subscriptions[guid] = { model, condition, getUrlOptions, authToken, send }
-      console.info('SUBSCRIBE', guid, model, condition, getUrlOptions)
+      logger.info('SUBSCRIBE', guid, model, condition, getUrlOptions)
+      logger.debug('Subscriptions count:', Object.keys(subscriptions).length)
     }
 
+    // TODO: Rename 'unsubscribe'
     if (command === 'unSubscribe') unSubscribe(args.guid)
   })
 
@@ -151,3 +165,16 @@ server.on('connection', (ws) => {
     }
   })
 })
+
+// try {
+//   logger.time('test time')
+//   logger.debug('test debug')
+//   logger.info('test debug')
+//   logger.info('test', 'multiple', { info: 'arguments' })
+//   logger.timeEnd('test time')
+//   throw new Error('test error')
+// }
+// catch (e) {
+//   logger.error(e)
+//   logger.error('test', 'multiple', 'error')
+// }

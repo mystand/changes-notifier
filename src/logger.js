@@ -1,6 +1,7 @@
-// TODO: Use flow
+// @flow
 import config from './config'
 import * as dateHelper from './date-helper'
+import type { HashType } from './types'
 
 const LOG_LEVELS = {
   FATAL: 0,
@@ -18,8 +19,15 @@ function shouldLog(logLevel) {
   return logLevel <= CURRENT_LOG_LEVEL
 }
 
-function getKeyByValue(value, object) {
-  return Object.keys(object).find(key => object[key] === value)
+function getKeyByValue(value, object: HashType): string {
+  const result = Object.keys(object).find(key => object[key] === value)
+
+  if (result) {
+    return result
+  } else {
+    console.error(`Cannot get key by value ${value} in object`, object)
+    throw new Error()
+  }
 }
 
 function parseLogLevel(name) {
@@ -28,52 +36,52 @@ function parseLogLevel(name) {
   if (parsedLogLevel) {
     return parsedLogLevel
   } else {
-    throw new Error(`Cannot parse log level "${name}". Should be string representing one of logger.LOG_LEVELS  keys.`)
+    throw new Error(`Cannot parse log level "${name}". Should be string representing one of logger.LOG_LEVELS keys.`)
   }
 }
 
-function logPrefixedMessage(message, logLevel) {
-  // eslint-disable-next-line no-console
-  console.log(`[${dateHelper.formatNewDate()}][${getKeyByValue(logLevel, LOG_LEVELS)}] ${message}`)
+function stamps(logLevel) {
+  return `[${dateHelper.formatNewDate()}][${getKeyByValue(logLevel, LOG_LEVELS)}]`
 }
 
-export function error(messageSource) {
+function logPrefixedMessage(logLevel, ...otherArguments: any) {
+  // eslint-disable-next-line no-console
+  console.log(stamps(logLevel), ...otherArguments)
+}
+
+export function error() {
   const logLevel = LOG_LEVELS.ERROR
 
   if (shouldLog(logLevel)) {
-    const message = typeof messageSource === 'function' ? messageSource() : messageSource
-
-    console.error(`[${dateHelper.formatNewDate()}][${getKeyByValue(logLevel, LOG_LEVELS)}] ${message}`)
+    console.error(stamps(logLevel), ...arguments)
   }
 }
 
-export function info(messageSource) {
-  log(messageSource, LOG_LEVELS.INFO)
+export function info() {
+  log(LOG_LEVELS.INFO, ...arguments)
 }
 
-export function debug(messageSource) {
-  log(messageSource, LOG_LEVELS.DEBUG)
+export function debug() {
+  log(LOG_LEVELS.DEBUG, ...arguments)
 }
 
-export function log(messageSource, logLevel = DEFAULT_LOG_LEVEL) {
+export function log(logLevel: number, ...otherArguments: any) {
   if (shouldLog(logLevel)) {
-    const message = typeof messageSource === 'function' ? messageSource() : messageSource
-
-    logPrefixedMessage(message)
+    logPrefixedMessage(logLevel, ...otherArguments)
   }
 }
 
-export function time(timerName, logLevel = LOG_LEVELS.DEBUG) {
+export function time(timerName: string, logLevel?: number = LOG_LEVELS.DEBUG) {
   if (shouldLog(logLevel)) {
-    logPrefixedMessage(`Timer start: ${timerName}`)
+    logPrefixedMessage(logLevel, `Timer start: ${timerName}`)
     // eslint-disable-next-line no-console
     console.time(timerName)
   }
 }
 
-export function timeEnd(timerName, logLevel = LOG_LEVELS.DEBUG) {
+export function timeEnd(timerName: string, logLevel?: number = LOG_LEVELS.DEBUG) {
   if (shouldLog(logLevel)) {
-    logPrefixedMessage(`Timer end: ${timerName}`)
+    logPrefixedMessage(logLevel, `Timer end: ${timerName}`)
     // eslint-disable-next-line no-console
     console.timeEnd(timerName)
   }

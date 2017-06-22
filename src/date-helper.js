@@ -1,11 +1,11 @@
-// TODO: Use flow
+// @flow
 
 function padWithZero(number) {
   return number < 10 ? `0${number}` : number
 }
 
 // Formats date as YYYY-MM-DD HH:MM:SS
-export function format(date) {
+export function format(date: Date) {
   const year = date.getFullYear()
   const month = padWithZero(date.getMonth() + 1)
   const day = padWithZero(date.getDate())
@@ -18,7 +18,7 @@ export function format(date) {
 }
 
 // Formats date as DD.MM.YYYY
-export function formatRussianDate(date) {
+export function formatRussianDate(date: Date) {
   const day = padWithZero(date.getDate())
   const month = padWithZero(date.getMonth() + 1)
   const year = date.getFullYear()
