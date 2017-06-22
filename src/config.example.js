@@ -5,5 +5,6 @@ export default {
     port: 5432,
     db: 'dfo_pm_development'
   },
-  backend: 'http://localhost:3000'
+  backend: 'http://localhost:3000',
+  logLevel: 'DEBUG'
 }
