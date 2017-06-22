@@ -36,7 +36,7 @@
     "eslint-config-mystand": "git+https://bitbucket.org/mystand/eslint-config-mystand.git#2cba202",
     "eslint-config-mystand-flow": "git+https://bitbucket.org/mystand/eslint-config-mystand-flow.git#aec74db",
     "flow-bin": "^0.39.0",
-    "flow-typed": "^2.0.0",
+    "flow-typed": "2.1.2",
     "pre-commit": "^1.2.2"
   }
 }
