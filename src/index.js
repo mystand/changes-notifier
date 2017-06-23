@@ -165,16 +165,3 @@ server.on('connection', (ws) => {
     }
   })
 })
-
-// try {
-//   logger.time('test time')
-//   logger.debug('test debug')
-//   logger.info('test debug')
-//   logger.info('test', 'multiple', { info: 'arguments' })
-//   logger.timeEnd('test time')
-//   throw new Error('test error')
-// }
-// catch (e) {
-//   logger.error(e)
-//   logger.error('test', 'multiple', 'error')
-// }

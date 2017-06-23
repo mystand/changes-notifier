@@ -12,8 +12,8 @@ const LOG_LEVELS = {
   TRACE: 5
 }
 
-export const DEFAULT_LOG_LEVEL = LOG_LEVELS.INFO
-export const CURRENT_LOG_LEVEL = parseLogLevel(config.logLevel) || DEFAULT_LOG_LEVEL
+export const CURRENT_LOG_LEVEL = parseLogLevel(config.logLevel) || LOG_LEVELS.INFO
+export const TIMESTAMP_ENABLED = config.logTimestamp || false
 
 function shouldLog(logLevel) {
   return logLevel <= CURRENT_LOG_LEVEL
@@ -40,8 +40,16 @@ function parseLogLevel(name) {
   }
 }
 
+function timeStamp() {
+  return `[${dateHelper.formatNewDate()}]`
+}
+
+function logLevelStamp(logLevel) {
+  return `[${getKeyByValue(logLevel, LOG_LEVELS)}]`
+}
+
 function stamps(logLevel) {
-  return `[${dateHelper.formatNewDate()}][${getKeyByValue(logLevel, LOG_LEVELS)}]`
+  return TIMESTAMP_ENABLED ? timeStamp() + logLevelStamp(logLevel) : logLevelStamp(logLevel)
 }
 
 function logPrefixedMessage(logLevel, ...otherArguments: any) {
