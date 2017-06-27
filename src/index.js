@@ -79,7 +79,7 @@ pg.connect(`postgres://${pgConfig.host}/${pgConfig.db}`, (error, client) => {
         if (subscriptions.hasOwnProperty(guid)) {
           const subscription: SubscriptionType = subscriptions[guid]
           let getUrlWithQuery
-          if (action !== 'destroy' && subscription.getUrlOptions) {
+          if (getUrl && subscription.getUrlOptions) {
             // query of urijs can't parse nested query parameters
             const query = qs.stringify(subscription.getUrlOptions)
             // eslint-disable-next-line babel/new-cap
