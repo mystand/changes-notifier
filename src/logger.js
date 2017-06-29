@@ -12,10 +12,10 @@ const LOG_LEVELS = {
   TRACE: 5
 }
 
-export const CURRENT_LOG_LEVEL = parseLogLevel(config.logLevel) || LOG_LEVELS.INFO
-export const TIMESTAMP_ENABLED = config.logTimestamp || false
+export const CURRENT_LOG_LEVEL: number = parseLogLevelOrDefault(config.logLevel, LOG_LEVELS.INFO)
+export const TIMESTAMP_ENABLED: boolean = config.logTimestamp || false
 
-function shouldLog(logLevel) {
+function shouldLog(logLevel: number): boolean {
   return logLevel <= CURRENT_LOG_LEVEL
 }
 
@@ -30,13 +30,13 @@ function getKeyByValue(value, object: HashType): string {
   }
 }
 
-function parseLogLevel(name) {
-  const parsedLogLevel = LOG_LEVELS[name]
+function parseLogLevelOrDefault(logLevelName: string, defaultLogLevel: number): number {
+  const parsedLogLevel: ?number = LOG_LEVELS[logLevelName]
 
   if (parsedLogLevel) {
     return parsedLogLevel
   } else {
-    throw new Error(`Cannot parse log level "${name}". Should be string representing one of logger.LOG_LEVELS keys.`)
+    return defaultLogLevel
   }
 }
 
