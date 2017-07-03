@@ -1,4 +1,8 @@
 // @flow
+import path from 'path'
+import util from 'util'
+import fs from 'fs'
+
 import config from './config'
 import * as dateHelper from './date-helper'
 import type { HashType } from './types'
@@ -13,7 +17,11 @@ const LOG_LEVELS = {
 }
 
 export const CURRENT_LOG_LEVEL: number = parseLogLevelOrDefault(config.logLevel, LOG_LEVELS.INFO)
-export const TIMESTAMP_ENABLED: boolean = config.logTimestamp || false
+export const TIMESTAMP_ENABLED: boolean = config.logTimestampEnabled || false
+export const LOGFILE_ENABLED: boolean = config.logFileEnabled || false
+export const LOGFILE_PATH: string = path.join(__dirname, '..', 'log', 'changes-notifier.log')
+
+const timers: { [timerName: string]: Date } = {}
 
 function shouldLog(logLevel: number): boolean {
   return logLevel <= CURRENT_LOG_LEVEL
@@ -52,9 +60,22 @@ function stamps(logLevel) {
   return TIMESTAMP_ENABLED ? timeStamp() + logLevelStamp(logLevel) : logLevelStamp(logLevel)
 }
 
-function logPrefixedMessage(logLevel, ...otherArguments: any) {
+function toString(anything: any) {
+  return typeof anything === 'string' ? anything : util.inspect(anything)
+}
+
+function appendPrefixedMessageToFile(logLevel: number, ...otherArguments: any) {
+  const logString: string = otherArguments.map(toString).reduce((acc, str) => `${acc} ${str}`, '')
+  fs.appendFile(LOGFILE_PATH, `${stamps(logLevel)}${logString}\n`)
+}
+
+function logPrefixedMessage(logLevel: number, ...otherArguments: any) {
   // eslint-disable-next-line no-console
   console.log(stamps(logLevel), ...otherArguments)
+
+  if (LOGFILE_ENABLED) {
+    appendPrefixedMessageToFile(logLevel, ...otherArguments)
+  }
 }
 
 export function error() {
@@ -62,6 +83,10 @@ export function error() {
 
   if (shouldLog(logLevel)) {
     console.error(stamps(logLevel), ...arguments)
+
+    if (LOGFILE_ENABLED) {
+      appendPrefixedMessageToFile(logLevel, ...arguments)
+    }
   }
 }
 
@@ -79,19 +104,17 @@ export function log(logLevel: number, ...otherArguments: any) {
   }
 }
 
-export function time(timerName: string, logLevel?: number = LOG_LEVELS.DEBUG) {
+export function timeStart(timerName: string, logLevel?: number = LOG_LEVELS.DEBUG) {
   if (shouldLog(logLevel)) {
+    timers[timerName] = new Date()
     logPrefixedMessage(logLevel, `Timer start: ${timerName}`)
-    // eslint-disable-next-line no-console
-    console.time(timerName)
   }
 }
 
 export function timeEnd(timerName: string, logLevel?: number = LOG_LEVELS.DEBUG) {
   if (shouldLog(logLevel)) {
-    logPrefixedMessage(logLevel, `Timer end: ${timerName}`)
-    // eslint-disable-next-line no-console
-    console.timeEnd(timerName)
+    logPrefixedMessage(logLevel, `Timer end: ${timerName}. Duration: ${new Date() - timers[timerName]}ms`)
+    delete timers[timerName]
   }
 }
 

@@ -6,5 +6,7 @@ export default {
     db: 'dfo_pm_development'
   },
   backend: 'http://localhost:3000',
-  logLevel: 'DEBUG'
+  logLevel: 'DEBUG',
+  logFileEnabled: false,
+  logTimestampEnabled: true
 }

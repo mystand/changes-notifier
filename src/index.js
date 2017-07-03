@@ -78,7 +78,7 @@ pg.connect(`postgres://${pgConfig.host}/${pgConfig.db}`, (error, client) => {
 
       logger.info('NOTIFICATION', model, action, object, getUrl)
 
-      logger.time('For guid in subscriptions')
+      logger.timeStart('For guid in subscriptions')
 
       for (const guid in subscriptions) {
         if (subscriptions.hasOwnProperty(guid)) {

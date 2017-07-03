@@ -11,4 +11,4 @@
 
 # system and other files
 .DS_Store
-npm-debug.log
+*.log
