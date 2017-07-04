@@ -1,3 +1,5 @@
+// @flow
+
 export type HashType = { [key: string]: any }
 
 export type PsqlMessageType = {
