@@ -66,6 +66,7 @@ function toString(anything: any) {
 
 function appendPrefixedMessageToFile(logLevel: number, ...otherArguments: any) {
   const logString: string = otherArguments.map(toString).reduce((acc, str) => `${acc} ${str}`, '')
+  // TODO: Calling an asynchronous function without callback is deprecated.
   fs.appendFile(LOGFILE_PATH, `${stamps(logLevel)}${logString}\n`)
 }
 
