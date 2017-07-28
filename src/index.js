@@ -53,7 +53,7 @@ function notifyUpdate(subscription: SubscriptionType, object: HashType, getUrl?:
     fetchObject(subscription.authToken, getUrl).then((gotObject) => {
       subscription.send({ action: 'update', object: gotObject })
     }).catch((status) => {
-      if ([400, 403].includes(status)) {
+      if ([400, 403, 404].includes(status)) {
         subscription.send({ action: 'destroy', object: { id: object.id } })
       }
     })
