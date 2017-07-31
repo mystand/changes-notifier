@@ -2,5 +2,5 @@
 
 ```bash
 npm install
-cp src/config.example.js src/config.js
+cp src/config.js.example src/config.js
 ```
