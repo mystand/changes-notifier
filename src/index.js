@@ -44,7 +44,7 @@ function notifyCreate(subscription: SubscriptionType, object: HashType, getUrl?:
   } else {
     fetchObject(subscription.authToken, getUrl).then((gotObject) => {
       subscription.send({ action: 'create', object: gotObject })
-    })
+    }).catch(err => logger.error('notifyCreate error:', err))
   }
 }
 
