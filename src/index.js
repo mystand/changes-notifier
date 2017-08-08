@@ -67,8 +67,9 @@ function notifyDestroy(subscription: SubscriptionType, object: HashType): void {
 }
 
 const { pg: pgConfig } = config
+const pgUser = pgConfig.user || process.env.USER
 // $FlowIgnore
-pg.connect(`postgres://${pgConfig.host}/${pgConfig.db}`, (error, client) => {
+pg.connect(`postgres://${pgUser}@${pgConfig.host}/${pgConfig.db}`, (error, client) => {
   if (error) throw error
 
   client.on('notification', (msg: PsqlMessageType) => {
@@ -84,7 +85,7 @@ pg.connect(`postgres://${pgConfig.host}/${pgConfig.db}`, (error, client) => {
         if (subscriptions.hasOwnProperty(guid)) {
           const subscription: SubscriptionType = subscriptions[guid]
           let getUrlWithQuery
-          if (action !== 'destroy' && subscription.getUrlOptions) {
+          if (getUrl && subscription.getUrlOptions) {
             // query of urijs can't parse nested query parameters
             const query = qs.stringify(subscription.getUrlOptions)
             // eslint-disable-next-line babel/new-cap
