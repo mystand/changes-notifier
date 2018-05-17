@@ -147,8 +147,8 @@ server.on('connection', (ws) => {
   ws.on('close', () => {
     const guids = Object.keys(subscriptions)
     for (let i = 0; i < guids.length; ++i) {
-      const guid = guids[i]
-      if (subscriptions[guid].authToken === authToken) unSubscribe(guid)
+      // const guid = guids[i]
+      // if (subscriptions[guid].authToken === authToken) unSubscribe(guid)
     }
   })
 })
