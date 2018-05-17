@@ -12,6 +12,7 @@ export type PsqlMessageType = {
 
 export type SubscriptionType = {
   model: string,
+  id?: string,
   condition: ?string,
   authToken?: string,
   send: (HashType) => void
