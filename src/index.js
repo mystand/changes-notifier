@@ -113,7 +113,7 @@ const server = new WebSocket.Server({
 console.info(`Listening at ws://0.0.0.0:${port}/`)
 
 server.on('connection', (ws) => {
-  const authToken = ws.upgradeReq.headers['sec-websocket-protocol']
+  const [id, authToken] = ws.upgradeReq.headers['sec-websocket-protocol'].split(', ')
   // const user = jwtDecode(authToken) // todo catch error
 
   function unSubscribe(guid: string) {
@@ -137,7 +137,7 @@ server.on('connection', (ws) => {
     if (command === 'subscribe') {
       const { model, condition, getUrlOptions, guid } = (args: SubscribeArgsType)
       const send = (data: HashType) => ws.send(JSON.stringify({ guid, ...data }))
-      subscriptions[guid] = { model, condition, getUrlOptions, authToken, send }
+      subscriptions[guid] = { model, condition, getUrlOptions, authToken, id, send }
       console.info('SUBSCRIBE', guid, model, condition, getUrlOptions)
     }
 
@@ -147,8 +147,8 @@ server.on('connection', (ws) => {
   ws.on('close', () => {
     const guids = Object.keys(subscriptions)
     for (let i = 0; i < guids.length; ++i) {
-      // const guid = guids[i]
-      // if (subscriptions[guid].authToken === authToken) unSubscribe(guid)
+      const guid = guids[i]
+      if (subscriptions[guid].id === id) unSubscribe(guid)
     }
   })
 })
