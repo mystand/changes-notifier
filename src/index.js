@@ -65,9 +65,8 @@ function notifyDestroy(subscription: SubscriptionType, object: HashType): void {
 }
 
 const { pg: pgConfig } = config
-const pgUser = pgConfig.user || process.env.USER
 // $FlowIgnore
-pg.connect(`postgres://${pgUser}@${pgConfig.host}/${pgConfig.db}`, (error, client) => {
+pg.connect(`postgres://${pgConfig.host}/${pgConfig.db}`, (error, client) => {
   if (error) throw error
 
   client.on('notification', (msg: PsqlMessageType) => {
