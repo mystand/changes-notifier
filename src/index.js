@@ -61,7 +61,7 @@ function notifyUpdate(subscription: SubscriptionType, object: HashType, getUrl?:
 }
 
 function notifyDestroy(subscription: SubscriptionType, object: HashType): void {
-  subscription.send({ action: 'destroy', object })
+  subscription.send({ action: 'destroy', object: { data: object } })
 }
 
 const { pg: pgConfig } = config
