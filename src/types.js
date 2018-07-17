@@ -21,5 +21,6 @@ export type SubscribeArgsType = {
   guid: string,
   model: string,
   condition: ?string,
+  role: ?string,
   getUrlOptions: ?Object
 }

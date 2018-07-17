@@ -24,9 +24,10 @@ async function isObjectComplyCondition(object: HashType, condition: ?string): Pr
   }
 }
 
-function fetchObject(authToken?: string, getUrl: string): Promise<HashType> {
+function fetchObject(authToken?: string, getUrl: string, role?: string): Promise<HashType> {
   const headers: HashType = authToken ? {
-    authorization: `Bearer ${authToken}`
+    authorization: `Bearer ${authToken}`,
+    ...((role != null) ? { 'Authorization-User-Role': role } : {})
   } : {}
 
   const fullGetUrl: string = url.resolve(config.backend, getUrl)
@@ -40,7 +41,7 @@ function notifyCreate(subscription: SubscriptionType, object: HashType, getUrl?:
   if (!getUrl) {
     subscription.send({ action: 'create', object })
   } else {
-    fetchObject(subscription.authToken, getUrl).then((gotObject) => {
+    fetchObject(subscription.authToken, getUrl, subscription.role).then((gotObject) => {
       subscription.send({ action: 'create', object: gotObject })
     })
   }
@@ -50,7 +51,7 @@ function notifyUpdate(subscription: SubscriptionType, object: HashType, getUrl?:
   if (!getUrl) {
     subscription.send({ action: 'update', object })
   } else {
-    fetchObject(subscription.authToken, getUrl).then((gotObject) => {
+    fetchObject(subscription.authToken, getUrl, subscription.role).then((gotObject) => {
       subscription.send({ action: 'update', object: gotObject })
     }).catch((status) => {
       if ([400, 403, 404].includes(status)) {
@@ -113,7 +114,7 @@ const server = new WebSocket.Server({
 console.info(`Listening at ws://0.0.0.0:${port}/`)
 
 server.on('connection', (ws) => {
-  const authToken = ws.upgradeReq.headers['sec-websocket-protocol']
+  const [role, authToken] = ws.upgradeReq.headers['sec-websocket-protocol'].split(', ')
   // const user = jwtDecode(authToken) // todo catch error
 
   function unSubscribe(guid: string) {
@@ -137,8 +138,8 @@ server.on('connection', (ws) => {
     if (command === 'subscribe') {
       const { model, condition, getUrlOptions, guid } = (args: SubscribeArgsType)
       const send = (data: HashType) => ws.send(JSON.stringify({ guid, ...data }))
-      subscriptions[guid] = { model, condition, getUrlOptions, authToken, send }
-      console.info('SUBSCRIBE', guid, model, condition, getUrlOptions)
+      subscriptions[guid] = { model, condition, getUrlOptions, authToken, send, role }
+      console.info('SUBSCRIBE', guid, model, condition, getUrlOptions, role)
     }
 
     if (command === 'unSubscribe') unSubscribe(args.guid)
